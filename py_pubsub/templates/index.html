@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>CNC 3018-PRO Controller</title>
+    <style>
+        * {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            max-width: 550px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #1e3c72;
+            margin-top: 0;
+            font-size: 24px;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 8px;
+            background: #4caf50;
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .jog-panel {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .jog-btn {
+            background: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .jog-btn:active {
+            transform: scale(0.95);
+            background: #f57c00;
+        }
+        
+        .control-panel {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .ctrl-btn {
+            background: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .ctrl-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .emergency {
+            background: #f44336;
+            grid-column: span 2;
+        }
+        
+        .zero-btn {
+            background: #4caf50;
+        }
+        
+        .reset-btn {
+            background: #ff9800;
+        }
+        
+        .home-btn {
+            background: #9c27b0;
+        }
+        
+        .step-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .step-btn {
+            background: #9c27b0;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .step-btn.active {
+            background: #7b1fa2;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .info-panel {
+            background: #f5f5f5;
+            border-radius: 10px;
+            padding: 10px;
+            margin-top: 15px;
+            font-size: 12px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #666;
+        }
+        
+        .info-value {
+            color: #333;
+            font-family: monospace;
+        }
+        
+        .info {
+            text-align: center;
+            font-size: 11px;
+            color: #666;
+            margin-top: 15px;
+        }
+        
+        @media (max-width: 480px) {
+            .jog-btn {
+                padding: 15px;
+                font-size: 20px;
+            }
+            .ctrl-btn {
+                padding: 10px;
+                font-size: 12px;
+            }
+            .step-btn {
+                padding: 8px 15px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎛️ CNC 3018-PRO Controller</h1>
+        <div class="status" id="status">✅ Terhubung ke CNC</div>
+        
+        <!-- JOG PANEL -->
+        <div class="jog-panel">
+            <div></div>
+            <button class="jog-btn" data-axis="Y" data-dir="1">▲ Y+</button>
+            <div></div>
+            <button class="jog-btn" data-axis="X" data-dir="-1">◀ X-</button>
+            <button class="jog-btn" data-axis="Z" data-dir="1" style="background:#607d8b">Z+</button>
+            <button class="jog-btn" data-axis="X" data-dir="1">X+ ▶</button>
+            <div></div>
+            <button class="jog-btn" data-axis="Y" data-dir="-1">▼ Y-</button>
+            <button class="jog-btn" data-axis="Z" data-dir="-1" style="background:#607d8b">Z-</button>
+        </div>
+        
+        <!-- STEP SELECTOR -->
+        <div class="step-selector">
+            <button class="step-btn" data-step="0.1">0.1 mm</button>
+            <button class="step-btn active" data-step="1">1 mm</button>
+            <button class="step-btn" data-step="5">5 mm</button>
+            <button class="step-btn" data-step="10">10 mm</button>
+        </div>
+        
+        <!-- CONTROL PANEL -->
+        <div class="control-panel">
+            <button class="ctrl-btn" id="spindleOn">🔄 Spindle ON</button>
+            <button class="ctrl-btn" id="spindleOff">⏹️ Spindle OFF</button>
+            <button class="ctrl-btn zero-btn" id="setZeroBtn">📍 Set Work Zero</button>
+            <button class="ctrl-btn zero-btn" id="returnZeroBtn">🏁 Return to Zero</button>
+            <button class="ctrl-btn home-btn" id="saveHomeBtn">💾 Save Home</button>
+            <button class="ctrl-btn home-btn" id="returnHomeBtn">🏠 Return Home</button>
+            <button class="ctrl-btn reset-btn" id="softResetBtn">🔄 Soft Reset</button>
+            <button class="ctrl-btn" id="homeBtn">🏠 Home Machine</button>
+            <button class="ctrl-btn emergency" id="emergencyBtn">🛑 EMERGENCY STOP</button>
+        </div>
+        
+        <!-- INFO PANEL -->
+        <div class="info-panel">
+            <div class="info-row">
+                <span class="info-label">Step saat ini:</span>
+                <span class="info-value" id="stepValue">1</span>
+                <span class="info-label">mm</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Work Zero:</span>
+                <span class="info-value" id="workZeroInfo">X:0 Y:0 Z:0</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Saved Home:</span>
+                <span class="info-value" id="savedHomeInfo">X:0 Y:0 Z:0</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Machine Limit:</span>
+                <span class="info-value" id="machineLimitInfo">X:300 Y:180 Z:45 mm</span>
+            </div>
+        </div>
+        
+        <div class="info">
+            💡 Tekan dan tahan tombol arah untuk gerak kontinyu<br>
+            📍 Set Work Zero = posisi saat ini menjadi titik nol kerja<br>
+            🏁 Return to Zero = kembali ke titik nol kerja<br>
+            💾 Save Home = simpan posisi saat ini sebagai home<br>
+            🏠 Return Home = kembali ke posisi home yang disimpan<br>
+            🔄 Soft Reset = reset controller<br>
+            🏠 Home Machine = kembali ke limit switch
+        </div>
+    </div>
+    
+    <script>
+        let jogInterval = null;
+        let currentStep = 1;
+        
+        async function sendCommand(endpoint, data = {}) {
+            try {
+                const response = await fetch(`/api/${endpoint}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                return await response.json();
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('status').innerHTML = '❌ Gagal terhubung ke server';
+                document.getElementById('status').style.background = '#f44336';
+            }
+        }
+        
+        async function getStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                if(data.status === 'connected') {
+                    document.getElementById('status').innerHTML = '✅ Terhubung ke CNC';
+                    document.getElementById('status').style.background = '#4caf50';
+                    document.getElementById('stepValue').innerText = data.step;
+                    
+                    if(data.work_zero) {
+                        document.getElementById('workZeroInfo').innerHTML = 
+                            `X:${data.work_zero.X} Y:${data.work_zero.Y} Z:${data.work_zero.Z}`;
+                    }
+                    if(data.saved_home) {
+                        document.getElementById('savedHomeInfo').innerHTML = 
+                            `X:${data.saved_home.X} Y:${data.saved_home.Y} Z:${data.saved_home.Z}`;
+                    }
+                    if(data.machine_limit) {
+                        document.getElementById('machineLimitInfo').innerHTML = 
+                            `X:${data.machine_limit.X} Y:${data.machine_limit.Y} Z:${data.machine_limit.Z} mm`;
+                    }
+                }
+            } catch(e) {
+                document.getElementById('status').innerHTML = '⚠️ Server aktif, CNC tidak terhubung';
+                document.getElementById('status').style.background = '#ff9800';
+            }
+        }
+        
+        function startJog(axis, direction) {
+            if (jogInterval) clearInterval(jogInterval);
+            sendCommand('jog', {axis: axis, direction: direction});
+            jogInterval = setInterval(() => {
+                sendCommand('jog', {axis: axis, direction: direction});
+            }, 100);
+        }
+        
+        function stopJog() {
+            if (jogInterval) {
+                clearInterval(jogInterval);
+                jogInterval = null;
+            }
+        }
+        
+        // Event listeners untuk tombol jog
+        document.querySelectorAll('.jog-btn').forEach(btn => {
+            const axis = btn.dataset.axis;
+            const dir = parseInt(btn.dataset.dir);
+            
+            btn.addEventListener('mousedown', () => startJog(axis, dir));
+            btn.addEventListener('mouseup', stopJog);
+            btn.addEventListener('mouseleave', stopJog);
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                startJog(axis, dir);
+            });
+            btn.addEventListener('touchend', stopJog);
+        });
+        
+        // Spindle control
+        document.getElementById('spindleOn').onclick = () => sendCommand('spindle', {state: 'on'});
+        document.getElementById('spindleOff').onclick = () => sendCommand('spindle', {state: 'off'});
+        
+        // Zero features
+        document.getElementById('setZeroBtn').onclick = async () => {
+            await sendCommand('set_work_zero');
+            getStatus();
+        };
+        document.getElementById('returnZeroBtn').onclick = () => sendCommand('return_to_work_zero');
+        
+        // Home features
+        document.getElementById('saveHomeBtn').onclick = async () => {
+            await sendCommand('save_home');
+            getStatus();
+            alert('Home position saved!');
+        };
+        document.getElementById('returnHomeBtn').onclick = () => sendCommand('return_home');
+        
+        // Reset & emergency
+        document.getElementById('softResetBtn').onclick = () => sendCommand('soft_reset');
+        document.getElementById('homeBtn').onclick = () => sendCommand('home');
+        document.getElementById('emergencyBtn').onclick = () => {
+            if(confirm('⚠️ EMERGENCY STOP! Mesin akan berhenti total. Lanjutkan?')) {
+                sendCommand('emergency');
+            }
+        };
+        
+        // Step selector
+        document.querySelectorAll('.step-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.step-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentStep = parseFloat(btn.dataset.step);
+                document.getElementById('stepValue').innerText = currentStep;
+                sendCommand('step', {step: currentStep});
+            };
+        });
+        
+        // Update status every 3 seconds
+        setInterval(getStatus, 3000);
+        
+        // Initial status check
+        getStatus();
+    </script>
+</body>
+</html>
